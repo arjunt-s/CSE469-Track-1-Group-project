@@ -37,9 +37,11 @@ which is as expected as well.
 
 Additionally, having multiple '-i' item_ids can be added at once as long as all other information is correct.
 
-Added Functions 4/7/2026 by Arjun:
 
-1. show items
+
+# Added Functions 4/7/2026 by Arjun:
+
+# SHOW ITEMS
 Command:
 ./bchoc show items -c <case_id>
 
@@ -47,7 +49,7 @@ Description:
 This function reads through the blockchain file and prints all unique item IDs associated
 with the given case ID. It skips the initial genesis block and avoids printing duplicates.
 
-2. show history
+# SHOW HISTORY
 Command:
 ./bchoc show history [-c case_id] [-i item_id] [-n num_entries] [-r]
 
@@ -62,7 +64,7 @@ Supported options:
 -n  show only a certain number of entries
 -r  reverse the order of the displayed entries
 
-3. remove
+# REMOVE FUNCTION
 Command:
 ./bchoc remove -i <item_id> -y <reason> -p <password> [-o owner_info]
 
@@ -99,4 +101,3 @@ make
 
 This creates the executable:
 ./bchoc
-
