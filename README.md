@@ -43,7 +43,7 @@ Additionally, having multiple '-i' item_ids can be added at once as long as all 
 
 # SHOW ITEMS
 Command:
-./bchoc show items -c <case_id>
+```./bchoc show items -c <case_id> ```
 
 Description:
 This function reads through the blockchain file and prints all unique item IDs associated
@@ -51,41 +51,45 @@ with the given case ID. It skips the initial genesis block and avoids printing d
 
 # SHOW HISTORY
 Command:
-./bchoc show history [-c case_id] [-i item_id] [-n num_entries] [-r]
+``` ./bchoc show history [-c case_id] [-i item_id] [-n num_entries] [-r] ```
 
 Description:
 This function displays the history of blockchain entries. It can filter by case ID,
 item ID, limit the number of entries shown, and reverse the order so the newest entries
 appear first.
-
+```
 Supported options:
 -c  filter by case ID
 -i  filter by item ID
 -n  show only a certain number of entries
 -r  reverse the order of the displayed entries
+```
 
 # REMOVE FUNCTION
 Command:
-./bchoc remove -i <item_id> -y <reason> -p <password> [-o owner_info]
+```./bchoc remove -i <item_id> -y <reason> -p <password> [-o owner_info]```
 
 Description:
 This function removes an item from further use in the blockchain by creating a new block
 with a removal state. The item must already exist and must currently be in CHECKEDIN state.
 
 Valid removal reasons:
+```
 DISPOSED
 DESTROYED
 RELEASED
-
+```
 If RELEASED is used, owner information must also be provided with -o.
 
 Helper Functions-
 
-read_all_blocks(filepath)
+```read_all_blocks(filepath)```
+
 Reads all blocks from the blockchain file and stores them in a list of dictionaries
 so the other functions can work with them more easily.
 
-find_latest_block_for_item(blocks, item_id)
+```find_latest_block_for_item(blocks, item_id)```
+
 Finds the most recent block associated with a specific item ID.
 
 How these additions work-
@@ -95,9 +99,10 @@ program structure too much. The new code follows the same style as the rest of t
 using manual argument parsing and the same block reading format already used in the project.
 
 Build / Run
-
+```
 Run:
 make
 
 This creates the executable:
 ./bchoc
+```
