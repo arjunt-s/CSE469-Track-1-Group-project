@@ -43,6 +43,7 @@ Additionally, having multiple '-i' item_ids can be added at once as long as all 
 
 # SHOW ITEMS
 Command:
+
 ```./bchoc show items -c <case_id> ```
 
 Description:
@@ -51,6 +52,7 @@ with the given case ID. It skips the initial genesis block and avoids printing d
 
 # SHOW HISTORY
 Command:
+
 ``` ./bchoc show history [-c case_id] [-i item_id] [-n num_entries] [-r] ```
 
 Description:
@@ -67,6 +69,7 @@ Supported options:
 
 # REMOVE FUNCTION
 Command:
+
 ```./bchoc remove -i <item_id> -y <reason> -p <password> [-o owner_info]```
 
 Description:
