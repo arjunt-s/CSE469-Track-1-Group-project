@@ -136,7 +136,7 @@ def handle_add(args):
             case_bytes = case_id.encode().ljust(32, b'\x00')
             item_bytes = item.encode().ljust(32, b'\x00')
             state = b'CHECKEDIN\x00\x00\x00'
-            creator_bytes = creator.encode().ljust(12, b'\x00')
+            creator_bytes = (creator or '').encode().ljust(12, b'\x00')
             owner = b'\x00' * 12
             data = b''
             data_length = len(data)
@@ -423,6 +423,9 @@ def main():
     command = sys.argv[1]
     
     if command == "init":
+        if len(sys.argv) > 2:
+            print("Error: init does not accept additional arguments", file=sys.stderr)
+            return 1
         return handle_init()
     elif command == "add":
         return handle_add(sys.argv[2:])
