@@ -33,8 +33,23 @@ def handle_init():
     filepath = get_blockchain_path()
 
     if os.path.exists(filepath):
-        print("Blockchain file found with INITIAL block.")
-        return 0
+        try:
+            with open(filepath, 'rb') as f:
+                data = f.read()
+                if len(data) ==0:
+                    print("Error: Blockchain file is empty", file=sys.stderr)
+                    return 1
+                header_size = struct.calcsize("32s d 32s 32s 12s 12s 12s I")
+                if len(data) < header_size:
+                    print("Error: Invalid blockchain file (too short)", file=sys.stderr)
+                    return 1
+                
+            print("Blockchain file found with INITIAL block.")
+            return 0
+        except Exception as e:
+            print(f"Erorr validating existing file: {e}", file=sys.stderr)
+            return 1
+
     
     try:#file doesnt exist; amke it
         genesis_block = create_genesis_block()
