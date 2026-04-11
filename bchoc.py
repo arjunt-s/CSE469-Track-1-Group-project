@@ -115,6 +115,9 @@ def handle_add(args):
         print("Invalid password")
         return 1
     
+    AES_KEY = b"R0chLi4uLi4uLi4=" # form spec doc
+    cipher = AES.new(AES_KEY, AES.MODE_ECB)
+    
     #read existing blockingchain
 
     existing_items = set()
@@ -152,8 +155,7 @@ def handle_add(args):
         
 
     # new blocks
-    AES_KEY = b"R0chLi4uLi4uLi4=" # form spec doc
-    cipher = AES.new(AES_KEY, AES.MODE_ECB)
+
 
     with open(filepath, "ab") as f:
         for item in item_ids:
@@ -400,6 +402,7 @@ def handle_remove(args):
     if password != "C67C":
         print("Invalid password")
         return 1
+    
 
     if reason not in ["DISPOSED", "DESTROYED", "RELEASED"]:
         print("Error: Invalid removal reason", file=sys.stderr)
