@@ -129,8 +129,16 @@ def handle_add(args):
                 prev_hash, timestamp, case, evidence, state, creator_f, owner, data_len, = struct.unpack("32s d 32s 32s 12s 12s 12s I", header)
 
                 data = f.read(data_len)
-                item = evidence.decode(errors="ignore").strip("\x00")
-                existing_items.add(item)
+                evidence_encrypted = evidence[:16]
+                try:
+                    evidence_decrypted = cipher.decrypt(evidence_encrypted)
+                    item_bytes = evidence_decrypted[-4:]
+                    item_int = struct.unpack('>I', item_bytes)[0]
+                    existing_items.add(str(item_int))
+                except:
+                    pass
+               # item = evidence.decode(errors="ignore").strip("\x00")
+               # existing_items.add(item)
     except Exception as e:
         print(f"Error reading blcokchain: {e}", file=sys.stderr)
         return 1
@@ -145,6 +153,7 @@ def handle_add(args):
 
     # new blocks
     AES_KEY = b"R0chLi4uLi4uLi4=" # form spec doc
+    cipher = AES.new(AES_KEY, AES.MODE_ECB)
 
     with open(filepath, "ab") as f:
         for item in item_ids:
@@ -160,7 +169,6 @@ def handle_add(args):
             
 
             case_uuid_bytes = uuid.UUID(case_id).bytes  # Convert UUID to 16 bytes
-            cipher = AES.new(AES_KEY, AES.MODE_ECB)
             case_encrypted = cipher.encrypt(case_uuid_bytes)
             case_bytes = case_encrypted.ljust(32, b'\x00')
 
@@ -168,7 +176,6 @@ def handle_add(args):
             item_int = int(item)
             item_bytes_raw = struct.pack('>I', item_int) 
             item_padded = item_bytes_raw.rjust(16,b'\x00')# changes this form l->r for gradescope since the data is stored there
-            cipher = AES.new(AES_KEY, AES.MODE_ECB)
             item_encrypted = cipher.encrypt(item_padded)
             item_bytes = item_encrypted.ljust(32, b'\x00')
 
