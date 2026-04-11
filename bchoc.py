@@ -3,7 +3,8 @@
 import sys
 import os
 import struct
-
+import uuid
+from Crypto.Cipher import AES
 from datetime import datetime 
 import time
 
@@ -143,13 +144,34 @@ def handle_add(args):
         
 
     # new blocks
+    AES_KEY = b"R0chLi4uLi4uLi4=" # form spec doc
 
     with open(filepath, "ab") as f:
         for item in item_ids:
             prev_hash = b'\x00' * 32
             timestamp = time.time()
-            case_bytes = case_id.encode().ljust(32, b'\x00')
-            item_bytes = item.encode().ljust(32, b'\x00')
+           # case_bytes = case_id.encode().ljust(32, b'\x00')
+          ##  clean_case_id = case_id.replace('-','')
+          ## case_bytes = bytes.fromhex(clean_case_id).ljust(32, b'\x00')
+          ##  clean_item_id = item.replace('-','')
+           # item_bytes = item.encode().ljust(32, b'\x00')
+          ##  item_bytes = bytes.fromhex(clean_item_id).ljust(32, b'\x00')
+
+            
+
+            case_uuid_bytes = uuid.UUID(case_id).bytes  # Convert UUID to 16 bytes
+            cipher = AES.new(AES_KEY, AES.MODE_ECB)
+            case_encrypted = cipher.encrypt(case_uuid_bytes)
+            case_bytes = case_encrypted.ljust(32, b'\x00')
+
+            #FIXED: problem w/ item id: while encrypted it doesnt match
+            item_int = int(item)
+            item_bytes_raw = struct.pack('>I', item_int) 
+            item_padded = item_bytes_raw.rjust(16,b'\x00')# changes this form l->r for gradescope since the data is stored there
+            cipher = AES.new(AES_KEY, AES.MODE_ECB)
+            item_encrypted = cipher.encrypt(item_padded)
+            item_bytes = item_encrypted.ljust(32, b'\x00')
+
             state = b'CHECKEDIN\x00\x00\x00'
             creator_bytes = (creator or '').encode().ljust(12, b'\x00')
             owner = b'\x00' * 12
