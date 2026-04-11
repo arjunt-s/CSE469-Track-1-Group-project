@@ -160,7 +160,10 @@ def handle_add(args):
                 prev_hash, timestamp, case, evidence, state, creator_f, owner, data_len, = struct.unpack("32s d 32s 32s 12s 12s 12s I", header)
 
                 data = f.read(data_len)
-                evidence_encrypted = evidence[:16]
+                if state.startswith(b'INITIAL'):
+                    continue
+                #evidence_encrypted = evidence[:16]
+                """
                 try:
                     evidence_decrypted = cipher.decrypt(evidence_encrypted)
                     item_bytes = evidence_decrypted[-4:]
@@ -170,6 +173,16 @@ def handle_add(args):
                     pass
                # item = evidence.decode(errors="ignore").strip("\x00")
                # existing_items.add(item)
+               """
+                try:
+                    evidence_hex = evidence.decode('ascii').strip('\x00')
+                    evidence_encrypted = bytes.fromhex(evidence_hex)
+                    evidence_decrypted = cipher.decrypt(evidence_encrypted)
+                    item_bytes = evidence_decrypted[-4:]
+                    item_int = struct.unpack('>I', item_bytes)[0]
+                    existing_items.add(str(item_int))
+                except:
+                    pass
     except Exception as e:
         print(f"Error reading blockchain: {e}", file=sys.stderr)
         return 1
