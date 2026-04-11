@@ -8,6 +8,34 @@ from Crypto.Cipher import AES
 from datetime import datetime 
 import time
 
+"""
+def debug_print_blocks():
+    filepath = get_blockchain_path()
+
+    with open(filepath, "rb") as f:
+        while True:
+            header = f.read(struct.calcsize('32s d 32s 32s 12s 12s 12s I'))
+            if not header:
+                break
+
+            prev_hash, timestamp, case_id, evidence_id, state, creator, owner, data_len = struct.unpack('32s d 32s 32s 12s 12s 12s I', header)
+            data = f.read(data_len)
+
+            print("---- BLOCK ----")
+            print("prev_hash =", repr(prev_hash))
+            print("timestamp =", timestamp)
+            print("case_id =", case_id[:16].hex())
+            print("case_id (as text) =", case_id[:32].decode('ascii', errors='ignore'))
+            print("evidence_id (as text) =", evidence_id[:32].decode('ascii', errors='ignore'))
+            print("evidence_id =", evidence_id[:16].hex())
+            print("evidence_id =", repr(evidence_id[:16]))
+            print("state =", repr(state))
+            print("creator =", repr(creator))
+            print("owner =", repr(owner))
+            print("data_len =", data_len)
+            print()
+"""
+
 
 def get_blockchain_path():
     return os.environ.get('BCHOC_FILE_PATH', 'blockchain.dat')
@@ -143,7 +171,7 @@ def handle_add(args):
                # item = evidence.decode(errors="ignore").strip("\x00")
                # existing_items.add(item)
     except Exception as e:
-        print(f"Error reading blcokchain: {e}", file=sys.stderr)
+        print(f"Error reading blockchain: {e}", file=sys.stderr)
         return 1
     
     # dulicate item check
@@ -172,14 +200,16 @@ def handle_add(args):
 
             case_uuid_bytes = uuid.UUID(case_id).bytes  # Convert UUID to 16 bytes
             case_encrypted = cipher.encrypt(case_uuid_bytes)
-            case_bytes = case_encrypted.ljust(32, b'\x00')
+            case_hex = case_encrypted.hex()
+            case_bytes = case_hex.encode('ascii')#.ljust(32, b'\x00')
 
             #FIXED: problem w/ item id: while encrypted it doesnt match
             item_int = int(item)
             item_bytes_raw = struct.pack('>I', item_int) 
             item_padded = item_bytes_raw.rjust(16,b'\x00')# changes this form l->r for gradescope since the data is stored there
             item_encrypted = cipher.encrypt(item_padded)
-            item_bytes = item_encrypted.ljust(32, b'\x00')
+            item_hex = item_encrypted.hex()
+            item_bytes = item_hex.encode('ascii')#.ljust(32, b'\x00')
 
             state = b'CHECKEDIN\x00\x00\x00'
             creator_bytes = (creator or '').encode().ljust(12, b'\x00')
@@ -198,6 +228,8 @@ def handle_add(args):
             print(f"Added item: {item}")
             print(f"Status: CHECKEDIN")
             print(f"Time of action: {dt.isoformat()}Z")
+
+    #debug_print_blocks()
 
     return 0 
 
