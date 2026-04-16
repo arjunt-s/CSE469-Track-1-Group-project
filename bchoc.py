@@ -246,6 +246,120 @@ def handle_add(args):
 
     return 0 
 
+def handle_checkin(args):
+    filepath = get_blockchain_path()
+
+    if not os.path.exists(filepath):
+        print("Erorr: Blockchain file not found", file=sys.stderr)
+        return 1
+    
+    item_id = None
+    password = None
+
+    i = 0
+    while i < len(args):
+        if args[i] == "-i":
+            item_id = args[i+1]
+            i+=2
+        elif args[i] == "-p":
+            password=args[i+1]
+            i+=2
+        else:
+            i+=1
+
+    if not item_id:
+        print("Error: item_id required", file=sys.stderr)
+        return 1
+    
+    valid_passwords = ["P80P", "L76L", "A65A", "E69E", "C67C"]
+    if password not in valid_passwords:
+        print("Invalid password")
+        return 1
+    
+    AES_KEY = b"R0chLi4uLi4uLi4="
+    cipher = AES.new(AES_KEY, AES.MODE_ECB)
+
+    last_case_id = None
+    last_id = None
+    item_exists = False
+
+    try:
+        with open(filepath,"rb") as f:
+            while True:
+                header = f.read(struct.calcsize("32s d 32s 32s 12s 12s 12s I"))
+                if not header:
+                    break
+
+                prev_hash, timestamp,case, evidence, state, creator, owner, data_len = struct.unpack("32s d 32s 32s 12s 12s 12s I", header)
+                f.read(data_len)
+
+                if state.startswith(b'INITIAL'):
+                    continue
+
+                try:
+                    evidence_hex = evidence.decode('ascii').strip('\x00')
+                    evidence_encrypted = bytes.fromhex(evidence_hex)
+                    evidence_decrypted=cipher.decrypt(evidence_encrypted)
+                    item_bytes = evidence_decrypted[-4:]
+                    item_int = struct.unpack('>I', item_bytes)[0]
+
+                    if str(item_int) == item_id:
+                        item_exists = True
+                        case_hex = case.decode('ascii').strip('\x00')
+                        case_encrypted = bytes.fromhex(case_hex)
+                        case_decrypted = cipher.decrypt(case_encrypted)
+                        case_uuid = uuid.UUID(bytes=case_decrypted)
+                        last_case_id = str(case_uuid)
+                        last_state = state.decode(errors="ignore").strip("\x00")
+                except:
+                    pass
+    except Exception as e:
+        print(f"Error reading blockchain: {e}", file=sys.stderr)
+        return 1
+    
+    if not item_exists:
+        print(f"Error: Item {item_id} not found", file=sys.stderr)
+        return 1
+    
+    if last_state != "CHECKEDOUT":
+        print(f"Error: Item {item_id} is not checked out (current state: {last_state})", file= sys.stderr)
+        return 1
+    
+    with open(filepath, "ab") as f:
+        prev_hash = b'\x00'*32
+        timestamp = time.time()
+        case_uuid_bytes = uuid.UUID(last_case_id).bytes
+        case_encrypted = cipher.encrypt(case_uuid_bytes)
+        case_hex = case_encrypted.hex()
+        case_bytes = case_hex.encode('ascii')
+        item_int = int(item_id)
+        item_bytes_raw= struct.pack('>I', item_int)
+        item_padded = item_bytes_raw.rjust(16, b'\x00')
+        item_encrypted = cipher.encrypt(item_padded)
+        item_hex = item_encrypted.hex()
+        item_bytes = item_hex.encode('ascii')
+        
+        state = b'CHECKEDIN\x00\x00\x00'
+        creator_bytes = b'\x00'*12
+        owner_bytes = b'\x00' *12
+        data = b''
+        data_length = len(data)
+
+        header = struct.pack("32s d 32s 32s 12s 12s 12s I", prev_hash, timestamp,case_bytes,item_bytes,state,creator_bytes,owner_bytes,data_length)
+        f.write(header)
+        f.write(data)
+
+    dt = datetime.utcfromtimestamp(timestamp)
+    print(f"Case: {last_case_id}")
+    print(f"Checked in item: {item_id}")
+    print(f"Status: CHECKEDIN")
+    print(f"Time of action: {dt.isoformat()}Z")
+
+    return 0
+
+
+
+
 # some helper functions needed to run code -arjun
 def read_all_blocks(filepath):
     blocks = []
@@ -523,6 +637,8 @@ def main():
         return handle_add(sys.argv[2:])
     elif command == "remove":
         return handle_remove(sys.argv[2:])
+    elif command == "checkin":
+        return handle_checkin(sys.argv[2:])
     elif command == "show":
         if len(sys.argv) < 3:
             print("Error: show requires a subcommand", file=sys.stderr)
