@@ -360,7 +360,7 @@ def handle_checkout(args):
     filepath = get_blockchain_path()
 
     if not os.path.exists(filepath):
-        print("Error: Blockchain file not found", file=sys.stderr)
+        print("Error: Blockchain file not found", file=sys.stderr) 
         return 1
 
     item_id = None
@@ -492,6 +492,11 @@ def read_all_blocks(filepath):
     header_format = "32s d 32s 32s 12s 12s 12s I"
     header_size = struct.calcsize(header_format)
 
+
+    #added the section below because I dont think this function is decrypting correctly
+    AES_KEY = b"R0chLi4uLi4uLi4="
+    cipher = AES.new(AES_KEY, AES.MODE_ECB)
+
     try:
         with open(filepath, "rb") as f:
             while True:
@@ -510,13 +515,34 @@ def read_all_blocks(filepath):
                     print("Error: Corrupted block data", file=sys.stderr)
                     return None
 
-                # decode the stored byte fields so they are easier to work with
+                
+                state_str = state.decode(errors="ignore").strip("\x00")
+
+                
+                if state_str == "INITIAL":
+                    decoded_case_id = case_id.decode(errors="ignore").strip("\x00")
+                    decoded_item_id = evidence_id.decode(errors="ignore").strip("\x00")
+                else:
+                    
+                    case_hex = case_id.decode("ascii").strip("\x00")
+                    case_encrypted = bytes.fromhex(case_hex)
+                    case_decrypted = cipher.decrypt(case_encrypted)
+                    decoded_case_id = str(uuid.UUID(bytes=case_decrypted))
+
+                    
+                    evidence_hex = evidence_id.decode("ascii").strip("\x00")
+                    evidence_encrypted = bytes.fromhex(evidence_hex)
+                    evidence_decrypted = cipher.decrypt(evidence_encrypted)
+                    item_bytes = evidence_decrypted[-4:]
+                    item_int = struct.unpack(">I", item_bytes)[0]
+                    decoded_item_id = str(item_int)
+
                 block = {
                     "prev_hash": prev_hash,
                     "timestamp": timestamp,
-                    "case_id": case_id.decode(errors="ignore").strip("\x00"),
-                    "item_id": evidence_id.decode(errors="ignore").strip("\x00"),
-                    "state": state.decode(errors="ignore").strip("\x00"),
+                    "case_id": decoded_case_id,
+                    "item_id": decoded_item_id,
+                    "state": state_str,
                     "creator": creator.decode(errors="ignore").strip("\x00"),
                     "owner": owner.decode(errors="ignore").strip("\x00"),
                     "data_len": data_len,
