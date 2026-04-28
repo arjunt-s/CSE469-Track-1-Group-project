@@ -658,12 +658,12 @@ def handle_show_history(args):
     if not os.path.exists(filepath):
         print("Error: Blockchain file not found", file=sys.stderr)
         return 1
-
+    
+    password = None
     case_id = None
     item_id = None
     num_entries = None
     reverse = False
-    password = None
 
     # parse options for filtering history
     i = 0
@@ -680,14 +680,14 @@ def handle_show_history(args):
         elif args[i] == "-r":
             reverse = True
             i += 1
-        # elif args[i] == "-p":
-       #     i +=1
+        elif args[i] == "-p":
+            i +=1
         else:
             i += 1
-
-    #if password != "P80P" or "L76L" or "A65A" or "E69E":
-    #    print("Invalid password")
-    #    return 1
+        
+    if password != "P80P" or "L76L" or "A65A" or "E69E":
+        print("Invalid password")
+        return 1
 
     blocks = read_all_blocks(filepath)
     if blocks is None:
@@ -774,7 +774,7 @@ def handle_remove(args):
         return 1
 
     if reason == "RELEASED" and owner_info == "":
-         #print("")#"Error: owner info required when reason is RELEASED", file=sys.stderr)
+        #print("")#"Error: owner info required when reason is RELEASED", file=sys.stderr)
         #this changed in the insturctions so no owner info required 
         return 0
 
