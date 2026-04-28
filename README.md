@@ -38,9 +38,6 @@ which is as expected as well.
 Additionally, having multiple '-i' item_ids can be added at once as long as all other information is correct.
 
 
-
-# Added Functions 4/7/2026 by Arjun:
-
 # SHOW ITEMS
 Command:
 
