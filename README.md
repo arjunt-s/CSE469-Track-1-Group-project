@@ -109,3 +109,34 @@ make
 This creates the executable:
 ./bchoc
 ```
+
+# SHOW CASES
+Command:
+
+```./bchoc show cases```
+
+Description:
+This function prints all unique case IDs that exist in the blockchain.
+It scans through all blocks and collects the case IDs, skipping the initial block.
+Duplicate case IDs are not printed more than once.
+
+
+# SUMMARY FUNCTION
+Command:
+
+```./bchoc summary -c <case_id>```
+
+Description:
+This function goes through all blocks for a given case ID and prints a summary of activity.
+It counts the total number of unique items and how many times each state appears.
+
+Output includes:
+```
+Total Evidence Items
+Checked In
+Checked Out
+Disposed
+Destroyed
+Released
+```
+
