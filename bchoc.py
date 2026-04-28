@@ -93,6 +93,8 @@ def handle_init():
 def find_latest_block_for_item(blocks, item_id):
     latest = None
 
+    # loop through all blocks and keep updating latest
+    # so at the end we have the most recent one
     for block in blocks:
         if block["item_id"] == item_id:
             latest = block
@@ -503,14 +505,17 @@ def read_all_blocks(filepath):
                 header = f.read(header_size)
                 if not header:
                     break
-
+                    
+                # if header isn't correct size, something is wrong with file
                 if len(header) != header_size:
                     print("Error: Corrupted block header", file=sys.stderr)
                     return None
-
+                    
+                # unpack the header into individual fields
                 prev_hash, timestamp, case_id, evidence_id, state, creator, owner, data_len = struct.unpack(header_format, header)
                 data = f.read(data_len)
-
+                
+                # make sure data length matches what we expect
                 if len(data) != data_len:
                     print("Error: Corrupted block data", file=sys.stderr)
                     return None
@@ -536,7 +541,8 @@ def read_all_blocks(filepath):
                     item_bytes = evidence_decrypted[-4:]
                     item_int = struct.unpack(">I", item_bytes)[0]
                     decoded_item_id = str(item_int)
-
+                    
+                # convert byte fields into readable strings
                 block = {
                     "prev_hash": prev_hash,
                     "timestamp": timestamp,
@@ -610,6 +616,7 @@ def handle_show_items(args):
     found_items = []
     seen = set()
 
+    # collect unique item IDs for the given case
     for block in blocks:
         # skip genesis block
         if block["state"] == "INITIAL":
