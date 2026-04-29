@@ -279,8 +279,8 @@ def handle_checkin(args):
     cipher = AES.new(AES_KEY, AES.MODE_ECB)
 
     last_case_id = None
-    last_id = None
     item_exists = False
+    last_creator = None
 
     try:
         with open(filepath,"rb") as f:
@@ -310,6 +310,7 @@ def handle_checkin(args):
                         case_uuid = uuid.UUID(bytes=case_decrypted)
                         last_case_id = str(case_uuid)
                         last_state = state.decode(errors="ignore").strip("\x00")
+                        last_creator = creator.decode(errors="ignore").strip("\x00")
                 except:
                     pass
     except Exception as e:
@@ -323,6 +324,16 @@ def handle_checkin(args):
     if last_state != "CHECKEDOUT":
         print(f"Error: Item {item_id} is not checked out (current state: {last_state})", file= sys.stderr)
         return 1
+
+    password_to_owner = {
+        "P80P" : "POLICE",
+        "L76L" : "LAWYER",
+        "A65A" : "ANALYST",
+        "E69E" : "EXECUTIVE",
+        "C67C" : "CREATOR"
+    }
+
+    owner_role = password_to_owner.get(password,"")
     
     with open(filepath, "ab") as f:
         prev_hash = b'\x00'*32
@@ -339,8 +350,8 @@ def handle_checkin(args):
         item_bytes = item_hex.encode('ascii')
         
         state = b'CHECKEDIN\x00\x00\x00'
-        creator_bytes = b'\x00'*12
-        owner_bytes = b'\x00' *12
+        creator_bytes = last_creator.encode().ljust(12,b'\x00')#b'\x00'*12
+        owner_bytes = owner_role.encode().ljust(12,b'\x00')#b'\x00' *12
         data = b''
         data_length = len(data)
 
@@ -392,6 +403,7 @@ def handle_checkout(args):
     last_case_id = None
     last_state = None
     item_exists = False
+    last_creator = None
 
     try:
         with open(filepath,"rb") as f:
@@ -422,6 +434,7 @@ def handle_checkout(args):
 
                         last_case_id = str(case_uuid)
                         last_state = state.decode(errors="ignore").strip("\x00")
+                        last_creator = creator.decode(errors="ignore").strip("\x00")
                 except:
                     pass
     except Exception as e:
@@ -435,6 +448,16 @@ def handle_checkout(args):
     if last_state != "CHECKEDIN":
         print(f"Error: Item {item_id} is not checked in (current state: {last_state})", file=sys.stderr)
         return 1
+
+    password_to_owner = {
+        "P80P" : "POLICE",
+        "L76L" : "LAWYER",
+        "A65A" : "ANALYST",
+        "E69E" : "EXECUTIVE",
+        "C67C" : "CREATOR"
+    }
+
+    owner_role = password_to_owner.get(password,"")
 
     try:
         with open(filepath, "ab") as f:
@@ -454,8 +477,8 @@ def handle_checkout(args):
             item_bytes = item_hex.encode("ascii")
 
             state_bytes = b"CHECKEDOUT\x00\x00"
-            creator_bytes = b"\x00" * 12
-            owner_bytes = b"\x00" * 12
+            creator_bytes = last_creator.encode().ljust(12,b'\x00')#b"\x00" * 12
+            owner_bytes = owner_role.encode().ljust(12,b'\x00') #b"\x00" * 12
             data = b""
             data_length = len(data)
 
