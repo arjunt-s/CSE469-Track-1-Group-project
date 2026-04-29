@@ -796,10 +796,11 @@ def handle_remove(args):
         print("Error: Invalid removal reason", file=sys.stderr)
         return 1
 
-    if reason == "RELEASED" and owner_info == "":
+   # if reason == "RELEASED" and owner_info == "":
          #print("")#"Error: owner info required when reason is RELEASED", file=sys.stderr)
         #this changed in the insturctions so no owner info required 
-        return 0
+     #   return 0
+     #remove this all togeteher so it doesnt end early - kailey
 
     blocks = read_all_blocks(filepath)
     if blocks is None:
@@ -809,6 +810,10 @@ def handle_remove(args):
 
     if latest_block is None:
         print("Error: Item not found", file=sys.stderr)
+        return 1
+    
+    if latest_block["state"] in ["DISPOSED","DESTROYED","RELEASED"]:
+        print("Error: Item already removed", file=sys.stderr)
         return 1
 
     if latest_block["state"] != "CHECKEDIN":
@@ -823,7 +828,7 @@ def handle_remove(args):
         item_bytes = encrypt_item_id_for_block(item_id)
         state_bytes = reason.encode().ljust(12, b'\x00')
         creator_bytes = latest_block["creator"].encode().ljust(12, b'\x00')
-        owner_bytes = b'\x00' * 12
+        owner_bytes = latest_block["owner"].encode().ljust(12,b'\x00')#b'\x00' * 12
         data = owner_info.encode() if reason == "RELEASED" else b''
         data_length = len(data)
 
