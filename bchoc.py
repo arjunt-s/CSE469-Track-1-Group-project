@@ -543,8 +543,8 @@ def read_all_blocks(filepath):
 
                 
                 if state_str == "INITIAL":
-                    decoded_case_id = case_id.decode(errors="ignore").strip("\x00")
-                    decoded_item_id = evidence_id.decode(errors="ignore").strip("\x00")
+                    decoded_case_id = "00000000-0000-0000-0000-000000000000"#case_id.decode(errors="ignore").strip("\x00")
+                    decoded_item_id =  "0"#evidence_id.decode(errors="ignore").strip("\x00")
                 else:
                     
                     case_hex = case_id.decode("ascii").strip("\x00")
@@ -703,14 +703,17 @@ def handle_show_history(args):
         elif args[i] == "-r":
             reverse = True
             i += 1
-        # elif args[i] == "-p":
-       #     i +=1
+        elif args[i] == "-p":
+            password = args[i +1]
+            i +=2
         else:
             i += 1
 
-    #if password != "P80P" or "L76L" or "A65A" or "E69E":
-    #    print("Invalid password")
-    #    return 1
+    if password is not None:
+        valid_passwords = ["P80P", "L76L", "A65A", "E69E", "C67C"]
+        if password not in valid_passwords:
+            print("Invalid password")
+            return 1
 
     blocks = read_all_blocks(filepath)
     if blocks is None:
@@ -720,7 +723,10 @@ def handle_show_history(args):
 
     for block in blocks:
         if block["state"] == "INITIAL":
-            continue
+           # continue
+           if case_id is None and item_id is None:
+               filtered_blocks.append(block)
+               continue
 
         if case_id and block["case_id"] != case_id:
             continue
@@ -734,7 +740,12 @@ def handle_show_history(args):
     filtered_blocks.sort(key=lambda x: x["timestamp"])
 
     if reverse:
-        filtered_blocks.reverse()
+        # Sort by timestamp once
+        filtered_blocks.sort(
+            key=lambda x: x["timestamp"],
+            reverse=reverse
+        )
+
 
     if num_entries is not None:
         filtered_blocks = filtered_blocks[:num_entries]
@@ -745,7 +756,7 @@ def handle_show_history(args):
         print(f"Case: {block['case_id']}")
         print(f"Item: {block['item_id']}")
         print(f"Action: {block['state']}")
-        print(f"Time: {dt.isoformat()}Z")
+        print(f"Time: {dt.strftime('%Y-%m-%dT%H:%M:%S.%f')}Z")
 
         if index != len(filtered_blocks) - 1:
             print()
