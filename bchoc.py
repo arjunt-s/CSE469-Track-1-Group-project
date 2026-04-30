@@ -977,9 +977,9 @@ def main():
     elif command == "checkin":
         return handle_checkin(sys.argv[2:])
     elif command == "checkout":
-        return handle_verify(sys.argv[2:])
-    elif command == "verify":
         return handle_checkout(sys.argv[2:])
+    elif command == "verify":
+        return handle_verify(sys.argv[2:])
     elif command == "show":
         if len(sys.argv) < 3:
             print("Error: show requires a subcommand", file=sys.stderr)
