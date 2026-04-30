@@ -875,14 +875,61 @@ def handle_verify(args):
         print("Error: Blockchain file not found", file=sys.stderr)
         return 1
     
-    blocks = read_all_blocks(filepath)
-    if blocks is None:
+    header_format = "32s d 32s 32s 12s 12s 12s I"
+    header_size = struct.calcsize(header_format)
+
+    raw_blocks = []
+    parsed_blocks = []
+
+    try:
+        with open(filepath, "rb") as f:
+            while True:
+                header = f.read(header_size)
+                if not header:
+                    break
+
+                if len(header) != header_size:
+                    print("Transactions in blockchain: 0")
+                    print("State of blockchain: ERROR")
+                    return 1
+
+                prev_hash, timestamp, case_id, evidence_id, state, creator, owner, data_len = struct.unpack(header_format, header)
+                data = f.read(data_len)
+
+                if len(data) != data_len:
+                    print("Transactions in blockchain: 0")
+                    print("State of blockchain: ERROR")
+                    return 1
+
+                raw_block = header + data
+                raw_blocks.append(raw_block)
+
+                state_str = state.decode(errors="ignore").strip("\x00")
+
+                parsed_blocks.append({
+                    "prev_hash": prev_hash,
+                    "state": state_str,
+                    "case_id": case_id,
+                    "evidence_id": evidence_id
+                })
+
+    except Exception:
+        print("Transactions in blockchain: 0")
+        print("State of blockchain: ERROR")
         return 1
     
-    print(f"Transactions in blockchain: {len(blocks)}")
-    print("State of blockchain: CLEAN")
+    print(f"Transactions in blockchain: {len(raw_blocks)}")
 
+    if len(raw_blocks) == 0:
+        print("State of blockchain: ERROR")
+        return 1
+    
+    print("State of blockchain: CLEAN")
+    print(f"Transactions in blockchain: {len(blocks)}")
     return 0
+    
+    
+    
     
      
 
