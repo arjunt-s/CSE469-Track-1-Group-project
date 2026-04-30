@@ -7,6 +7,7 @@ import uuid
 from Crypto.Cipher import AES
 from datetime import datetime 
 import time
+import hashlib
 
 """
 def debug_print_blocks():
@@ -602,6 +603,126 @@ def encrypt_item_id_for_block(item_id):
 
     return item_encrypted.hex().encode("ascii")
 
+def handle_verify(args): #kailey 
+    filepath = get_blockchain_path()
+
+    if not os.path.exists(filepath):
+        print("Error: Blockchain file not found", file=sys.stderr)
+        return 1
+    
+    header_format = "32s d 32s 32s 12s 12s 12s I"
+    header_size = struct.calcsize(header_format)
+    AES_KEY = b"R0chLi4uLi4uLi4="
+    cipher = AES.new(AES_KEY,AES.MODE_ECB)
+    blocks = []
+    errors =[]
+
+    REMOVED_STATES = {"DISPOSED","DESTROYED","RELEASED"}
+    try:
+        with open(filepath,"rb") as f:
+            block_num = 0
+            prev_hash_expected = b'\x00' * 32
+
+            while True:
+                header_start = f.tell()
+                header = f.read(header_size)
+                if not header:
+                    break
+                if len(header) < header_size:
+                    print(f"erorr reading blockchain: unpack required buffer of {header_size} bytes", file=sys.stderr)
+                    return 1
+                prev_hash, timestamp,case_id,evidence_id,state,creator,owner,data_len = struct.unpack(header_format,header)
+                data = f.read(data_len)
+
+                if len(data)<data_len:
+                    print(f"error reading blockchain: unpack requires a buffer of {header_size} bytes", file=sys.stderr)
+                    return 1
+
+                f.seek(header_start)
+                block_content= f.read(header_size + data_len)
+                current_hash = hashlib.sha256(block_content).digest()
+
+                state_str = state.decode(errors="ignore").strip("\x00")
+                decoded_item_id = None
+
+                if state_str != "INITIAL":
+                    try:
+                        evidence_hex = evidence_id.decode("ascii").strip("\x00")
+                        evidence_encrypted = bytes.fromhex(evidence_hex)
+                        evidence_decrypted = cipher.decrypt(evidence_encrypted)
+                        item_bytes = evidence_decrypted[-4:]
+                        item_int = struct.unpack(">I", item_bytes)[0]
+                        decoded_item_id = str(item_int)
+                    except Exception:
+                        decoded_item_id = None
+
+                if block_num > 0: 
+                    if prev_hash != prev_hash_expected:
+                       # state_str = state.decode(errors="ignore").strip("\x00")
+                        errors.append(f"Block {block_num}: Prevous hash mismatch (state: {state_str})")
+
+                prev_hash_expected = current_hash
+                #blocks.append((block_num, state.decode(errors="ignore").strip("\x00")))
+                
+                blocks.append({
+                    "block_num":block_num,
+                    "state":state_str,
+                    "item_id":decoded_item_id,
+                    "current_hash": current_hash,
+                })
+                block_num += 1
+    except Exception as e: 
+        print(f"erorr reading blockchain: {e}",  file = sys.stderr)
+        return 1
+    
+    item_last_state = {}
+    item_ever_added = set()
+
+    for block in blocks:
+        state_str = block["state"]
+        item_id = block["item_id"]
+        block_num = block["block_num"]
+        if state_str == "INTIIAL":
+            continue
+        if item_id is None: 
+            continue
+        last_state = item_last_state.get(item_id)
+
+        if item_id not in item_ever_added:
+            if state_str != "CHECKEDIN":
+                errors.append(f"Block {block_num}: Item {item_id} used before being added (state: {state_str})")
+                item_last_state[item_id] = state_str
+                item_ever_added.add(item_id)
+                continue
+            else:
+                item_ever_added.add(item_id)
+                item_last_state[item_id] = state_str
+                continue
+
+        if last_state in REMOVED_STATES:
+            errors.append(f"Block {block_num}: Item checked out or checked in after removal from chain. (State: {state_str})")
+            item_last_state[item_id] = state_str
+            continue
+        if state_str == "CHECKEDIN" and last_state == "CHECKEDIN":
+            errors.append(f"Block {block_num}: Item checked in while already checked in (state: {state_str})")
+        elif state_str == "CHECKEDOUT" and last_state == "CHECKEDOUT":
+            errors.append(f"Block {block_num}: Item checked out while already checked out (state: {state_str})")
+        elif state_str in REMOVED_STATES and last_state == "CHECKEDOUT":
+            errors.append(f"Block {block_num}: Item removed  while  checked out (state: {state_str})")
+        item_last_state[item_id]= state_str
+ 
+    if errors:
+        print(f"Transacations in blockchain: {len(blocks)}")
+        print("State of blockchain: ERROR")
+        for error in errors:
+            print(error)
+        return 1 
+    else:
+        print(f"Transactions in blockchain: {len(blocks)}")
+        print("State of blockchain: CLEAN")
+        return 0
+
+
 
 # show items -arjun
 def handle_show_items(args):
@@ -700,7 +821,7 @@ def handle_show_history(args):
         elif args[i] == "-n":
             num_entries = int(args[i+1])
             i += 2
-        elif args[i] == "-r":
+        elif args[i] == "-r" or args[i] == "--reverse": #this testcase doesntmatch theinstructions 
             reverse = True
             i += 1
         elif args[i] == "-p":
@@ -737,14 +858,14 @@ def handle_show_history(args):
         filtered_blocks.append(block)
 
     # oldest first unless reverse was requested
-    filtered_blocks.sort(key=lambda x: x["timestamp"])
+    filtered_blocks.sort(key=lambda x: x["timestamp"], reverse=reverse)
 
-    if reverse:
+#    if reverse:
         # Sort by timestamp once
-        filtered_blocks.sort(
-            key=lambda x: x["timestamp"],
-            reverse=reverse
-        )
+#        filtered_blocks.sort(
+#            key=lambda x: x["timestamp"],
+#            reverse=reverse
+#        )
 
 
     if num_entries is not None:
@@ -954,6 +1075,8 @@ def main():
         return handle_checkin(sys.argv[2:])
     elif command == "checkout":
         return handle_checkout(sys.argv[2:])
+    elif command == "verify":
+        return handle_verify(sys.argv[2:])
     elif command == "show":
         if len(sys.argv) < 3:
             print("Error: show requires a subcommand", file=sys.stderr)
