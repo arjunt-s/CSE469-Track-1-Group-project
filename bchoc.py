@@ -145,7 +145,24 @@ def handle_add(args):
     
     AES_KEY = b"R0chLi4uLi4uLi4=" # form spec doc
     cipher = AES.new(AES_KEY, AES.MODE_ECB)
-    
+
+    ##Kailey Arnold
+    # AI Tool: Claude
+    # Question: How do I imeplement AEC ECB encryption for UUID and 4byte integers and be able to store them as hex encoded ASCII Strings in Pyhin
+    #Solutoin:
+    #
+#u = uuid.uuid4()
+#encrypted = cipher.encrypt(u.bytes)
+#hex_output = encrypted.hex()
+
+#raw = struct.pack(">I", number)
+# pad to 16 bytes for AES
+#padded = raw + b'\x00' * 12
+#encrypted = cipher.encrypt(padded)
+#hex_output = encrypted.hex()
+#
+#Why I needed it:The proejct doc specificed AES but didnt specify which encoding format, through trial and error I found it needed to be in ASCII hex strings and item_ids are just right justified padding before encryption happens to match the gradescope answers
+
     #read existing blockingchain
 
     existing_items = set()
@@ -312,6 +329,11 @@ def handle_checkin(args):
                         last_case_id = str(case_uuid)
                         last_state = state.decode(errors="ignore").strip("\x00")
                         last_creator = creator.decode(errors="ignore").strip("\x00")
+                        #KAILEY ARNOLD
+                        #CLAUDE
+                        #Question:Why is my encrypted case_id showing as raw bytes instead of hex ?
+                        #Purpose: The data was being stored incorrectly and i wasnt able to trace backt o where the issue was, it was faster and more intutive to send to AI
+                        #ai fixed the .hex() and .encode('ascii') conversion whtout the extra .ljust() i was using originally.
                 except:
                     pass
     except Exception as e:
@@ -603,6 +625,32 @@ def encrypt_item_id_for_block(item_id):
 
     return item_encrypted.hex().encode("ascii")
 
+#Kailey Arnold
+#AI: Claude
+#Purpose: Implementing this by myslef was difficilt without having something to base it on
+#Question: How do i verify blockchain integrity using SHA256 hashing of blocks and checking teh prev_hash fields? 
+#Code:
+#import hashlib
+
+#def compute_hash(data: bytes) -> str:
+ #   return hashlib.sha256(data).hexdigest()
+
+#def verify_chain(blocks):
+   # for i in range(1, len(blocks)):
+
+        # Recompute current block's hash
+   #     recalculated = compute_hash(blocks[i].data)
+
+        # Check stored hash matches recomputed hash
+   #     if blocks[i].hash != recalculated:
+   #         return False
+
+        # Check linkage to previous block
+  #      if blocks[i].prev_hash != blocks[i-1].hash:
+ #           return False
+#
+#    return True
+#
 def handle_verify(args): #kailey 
     filepath = get_blockchain_path()
 

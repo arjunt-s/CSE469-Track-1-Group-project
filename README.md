@@ -37,7 +37,24 @@ which is as expected as well.
 
 Additionally, having multiple '-i' item_ids can be added at once as long as all other information is correct.
 
+# CHECKIN Command
+Command: 
+```
+bash
+./bchoc checkin -i <item_id> -p <password>
+```
 
+Description: 
+Checks in an item that is currently checked out. The item must exist in the blockchain and must be in CHECKEDOUT state. Valid Passwords to checkout are: P80P, L76L, A65A, E69E, C67C. 
+
+# CHECKOUT Command 
+Command:
+```
+bash
+./bchoc checkout -i <item_id> -p <password>
+```
+Description:
+Checks out an item that is currently checked in. The item must exist in the blockchain and must be CHECKEDIN, accepted passwords are: P80P, L76L, A65A, E69E, C67C
 
 # Added Functions 4/7/2026 by Arjun:
 
@@ -49,6 +66,15 @@ Command:
 Description:
 This function reads through the blockchain file and prints all unique item IDs associated
 with the given case ID. It skips the initial genesis block and avoids printing duplicates.
+
+# SHOW CASES
+Command:
+```
+bash
+./bchoc show cases
+```
+Description:
+Displays all unique case IDs found in the blockchain (excluding the genesis block).
 
 # SHOW HISTORY
 Command:
@@ -84,6 +110,50 @@ RELEASED
 ```
 If RELEASED is used, owner information must also be provided with -o.
 
+
+# SUMMARY Command
+Command: 
+```bash
+./bchoc summary -c <case_id>
+```
+
+Description:
+Displays a summary of all transactions for a specific case, including:
+- Total number of unique evidence items
+- Number of items checked in
+- Number of items checked out
+- Number of items disposed
+- Number of items destroyed
+- Number of items released
+
+# VERIFY Command
+
+Command:
+```bash
+./bchoc verify
+```
+
+Description:
+Verifies the integrity of the blockchain by:
+1. Computing SHA-256 hash of each block
+2. Checking that each block's `prev_hash` field matches the hash of the previous block
+3. Validating the state machine (items cannot be used before being added, cannot be
+   checked in twice in a row, cannot be removed while checked out, etc.)
+
+Output: 
+``` 
+Transactions in blockchain: X
+State of blockchain: CLEAN
+```
+
+OR if there are errors that get detected the output becomes: 
+```
+Transactions in blockchain: X
+State of blockchain: ERROR
+Block N: [error description]
+```
+
+
 Helper Functions-
 
 ```read_all_blocks(filepath)```
@@ -109,3 +179,10 @@ make
 This creates the executable:
 ./bchoc
 ```
+
+Citations:
+
+
+Generative AI Acknowledgment: Portions of the code in this project were generated with assistance from ClaudeAI, an AI tool developed by Anthropic. 
+Reference: Anthropic. (2026). ClaudeAI [Large language model]. https://claude.ai
+
